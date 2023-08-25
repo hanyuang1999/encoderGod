@@ -15,6 +15,7 @@ def verify_key():
     current_key = generate_key(machine_code)
     if user_key == current_key:
         messagebox.showinfo("激活成功", "正在启动，感谢支持白键小店")
+        save_data()
         try:
             current_dir = os.path.dirname(__file__)
             exe_path = os.path.join(current_dir, 'gsl.exe')
@@ -66,6 +67,19 @@ def get_mainboard_serial_number():
     except:
         return None
 
+def save_data():
+    with open("data.txt", "w") as file:
+        content = key_entry.get()
+        file.write(content)
+
+def load_data():
+    try:
+        with open("data.txt", "r") as file:
+            content = file.read()
+            key_entry.insert(0, content)
+    except FileNotFoundError:
+        pass
+
 
 if __name__ == '__main__':
     app = tk.Tk()
@@ -84,6 +98,7 @@ if __name__ == '__main__':
     copy_button.pack()
     key_entry = tk.Entry(app)
     key_entry.pack()
+    load_data()
 
     verify_button = tk.Button(app, text="启动", command=verify_key)
     verify_button.pack()
