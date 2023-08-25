@@ -3,15 +3,39 @@ import uuid
 import hashlib
 import tkinter as tk
 from tkinter import messagebox
+import subprocess
+import psutil
 
 generated_result = ''
 def get_machine_code():
     machine_info = platform.uname()
     mac_address = hex(uuid.getnode())[2:]
-    machine_code = machine_info.node + mac_address
+    cpu_info = str(platform.processor()) + str(psutil.cpu_count(logical=False)) + str(psutil.cpu_count(logical=True))
+    disk_serial_number = get_disk_serial_number()
+    mainboard_serial_number = get_mainboard_serial_number()
+    machine_code = machine_info.node + mac_address + cpu_info + disk_serial_number + mainboard_serial_number
     return machine_code
+def generate_user(machine_code):
+    pre_key = 'hy'
+    end_key = 'a'
+    machine_code = pre_key + machine_code + end_key
+    return hashlib.md5(machine_code.encode()).hexdigest()
 def generate_key(machine_code):
     return hashlib.md5(machine_code.encode()).hexdigest()
+
+def get_disk_serial_number():
+    try:
+        output = subprocess.check_output(['wmic', 'diskdrive', 'get', 'SerialNumber']).strip()
+        return output.decode('utf-8').split('\n')[1]
+    except:
+        return None
+
+def get_mainboard_serial_number():
+    try:
+        output = subprocess.check_output(['wmic', 'baseboard', 'get', 'SerialNumber']).strip()
+        return output.decode('utf-8').split('\n')[1]
+    except:
+        return None
 
 def on_generate_button_click():
     user_key = key_entry.get()
