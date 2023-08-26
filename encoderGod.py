@@ -7,6 +7,7 @@ import subprocess
 import os
 import sys
 import psutil
+import multiprocessing
 
 def verify_key():
     user_key = key_entry.get()
@@ -16,16 +17,22 @@ def verify_key():
     if user_key == current_key:
         messagebox.showinfo("激活成功", "正在启动，感谢支持白键小店")
         save_data()
-        try:
-            current_dir = os.path.dirname(__file__)
-            exe_path = os.path.join(current_dir, 'gsl.exe')
-            subprocess.run([exe_path], check=True,cwd=os.path.dirname(sys.executable),shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except subprocess.CalledProcessError as e:
-            print(f"Error running gsl.exe: {e}")
-        except FileNotFoundError:
-            print("gsl.exe not found.")
+        app.destroy()
+        process = multiprocessing.Process(target=run_gsl)
+        process.start()
     else:
         messagebox.showerror("激活码错误", "激活码错误,请重试(或联系白键小店)")
+
+def run_gsl():
+    try:
+        current_dir = os.path.dirname(__file__)
+        exe_path = os.path.join(current_dir, 'gsl.exe')
+        subprocess.run([exe_path], check=True, cwd=os.path.dirname(sys.executable), shell=True, stdin=subprocess.PIPE,
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running gsl.exe: {e}")
+    except FileNotFoundError:
+        print("gsl.exe not found.")
 
 def get_machine_code():
     machine_info = platform.uname()
@@ -68,17 +75,22 @@ def get_mainboard_serial_number():
         return None
 
 def save_data():
-    with open("data.txt", "w") as file:
+    with open(get_data_file_path(), "w") as file:
         content = key_entry.get()
         file.write(content)
 
 def load_data():
     try:
-        with open("data.txt", "r") as file:
+        with open(get_data_file_path(), "r") as file:
             content = file.read()
             key_entry.insert(0, content)
     except FileNotFoundError:
         pass
+def get_data_file_path():
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, "data.txt")
+    else:
+        return "data.txt"
 
 
 if __name__ == '__main__':
