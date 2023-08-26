@@ -7,7 +7,8 @@ import subprocess
 import os
 import sys
 import psutil
-import multiprocessing
+from multiprocessing import freeze_support
+freeze_support()
 
 def verify_key():
     user_key = key_entry.get()
@@ -17,22 +18,22 @@ def verify_key():
     if user_key == current_key:
         messagebox.showinfo("激活成功", "正在启动，感谢支持白键小店")
         save_data()
-        app.destroy()
-        process = multiprocessing.Process(target=run_gsl)
-        process.start()
+        app.withdraw()
+        try:
+            current_dir = os.path.dirname(__file__)
+            exe_path = os.path.join(current_dir, 'gsl.exe')
+            subprocess.run([exe_path], check=True, cwd=os.path.dirname(sys.executable), shell=True,
+                           stdin=subprocess.PIPE,
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            app.iconify()
+            app.destroy()
+        except subprocess.CalledProcessError as e:
+            print(f"Error running gsl.exe: {e}")
+        except FileNotFoundError:
+            print("gsl.exe not found.")
     else:
         messagebox.showerror("激活码错误", "激活码错误,请重试(或联系白键小店)")
 
-def run_gsl():
-    try:
-        current_dir = os.path.dirname(__file__)
-        exe_path = os.path.join(current_dir, 'gsl.exe')
-        subprocess.run([exe_path], check=True, cwd=os.path.dirname(sys.executable), shell=True, stdin=subprocess.PIPE,
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running gsl.exe: {e}")
-    except FileNotFoundError:
-        print("gsl.exe not found.")
 
 def get_machine_code():
     machine_info = platform.uname()
