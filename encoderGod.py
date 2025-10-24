@@ -1,4 +1,5 @@
 import platform
+import requests
 import uuid
 import hashlib
 import tkinter as tk
@@ -7,8 +8,18 @@ import subprocess
 import os
 import sys
 import psutil
-from multiprocessing import freeze_support
-freeze_support()
+
+# 这里写你的产品名，url以后换服务器会变
+url = ""
+no_key = "demo1"
+
+def post_server(machine_code):
+    data = {
+        "product_name": no_key,
+        "machine_code": machine_code
+    }
+    response = requests.post(url, json=data)
+    return response.json()
 
 def verify_key(auto=False):
     user_key = key_entry.get()
@@ -62,7 +73,6 @@ def generate_user(machine_code):
     return hashlib.md5(machine_code.encode()).hexdigest()
 
 def generate_key(machine_code):
-    no_key = '可莉112'
     machine_code = machine_code + no_key
     return hashlib.md5(machine_code.encode()).hexdigest()
 
@@ -71,7 +81,9 @@ def copy_text():
     machine_code = get_machine_code()
     machine_code = generate_user(machine_code)
     app.clipboard_append(machine_code)
-    button_var.set("复制成功!请将用户id粘贴发送给客服领取激活码")
+
+    # button_var.set("复制成功!请将用户id粘贴发送给客服领取激活码")
+    button_var.set(f"用户id: {str(post_server(machine_code))}")
 
 def get_disk_serial_number():
     try:
