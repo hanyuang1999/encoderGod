@@ -13,8 +13,9 @@ import psutil
 url = ""
 no_key = ""
 
-def verify_product_key(product_key):
+def verify_product_key(product_key, machine_code):
     data = {
+        "machine_code": machine_code,
         "product_key": product_key,
         "product_name": no_key
     }
@@ -80,7 +81,7 @@ def endback_verify():
     machine_code = get_machine_code()
     machine_code = generate_user(machine_code)
     product_key = key_shop.get()
-    res = verify_product_key(product_key)
+    res = verify_product_key(product_key, machine_code)
     print(res)
     message = res["message"]
     key_var.set(message)
