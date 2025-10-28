@@ -1,6 +1,6 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-from tkinter import messagebox, scrolledtext
+from tkinter import messagebox, scrolledtext, filedialog
 import tkinter as tk
 import requests
 import json
@@ -9,6 +9,7 @@ import random
 import threading
 import configparser
 import os
+from datetime import datetime
 
 # 读取配置文件
 def load_config():
@@ -287,6 +288,14 @@ class ModernAdminApp:
             text="🗑 清空结果", 
             command=self.clear_query_result,
             bootstyle="secondary",
+            width=12
+        ).pack(side=LEFT, padx=5)
+        
+        ttk.Button(
+            query_input_frame, 
+            text="📊 导出Excel", 
+            command=self.export_to_excel,
+            bootstyle="success",
             width=12
         ).pack(side=LEFT, padx=5)
         
@@ -671,6 +680,107 @@ class ModernAdminApp:
                         self.update_status(f"✓ 已复制绑定码: {response_key}")
                     else:
                         self.update_status("⚠ 该记录没有绑定码")
+    
+    def export_to_excel(self):
+        """导出查询结果到Excel"""
+        # 检查是否有数据
+        items = self.query_tree.get_children()
+        if not items:
+            messagebox.showwarning("警告", "没有数据可以导出！\n请先查询数据。", parent=self.root)
+            return
+        
+        # 选择保存位置
+        default_filename = f"查询结果_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        file_path = filedialog.asksaveasfilename(
+            parent=self.root,
+            title="保存Excel文件",
+            defaultextension=".xlsx",
+            initialfile=default_filename,
+            filetypes=[("Excel文件", "*.xlsx"), ("所有文件", "*.*")]
+        )
+        
+        if not file_path:
+            return
+        
+        self.update_status("正在导出Excel文件...", 0)
+        
+        try:
+            # 尝试使用 openpyxl
+            try:
+                from openpyxl import Workbook
+                from openpyxl.styles import Font, Alignment, PatternFill
+                
+                # 创建工作簿
+                wb = Workbook()
+                ws = wb.active
+                ws.title = "查询结果"
+                
+                # 写入表头
+                headers = ["激活码", "产品名", "状态", "绑定码", "创建时间", "使用时间"]
+                for col, header in enumerate(headers, start=1):
+                    cell = ws.cell(row=1, column=col, value=header)
+                    cell.font = Font(bold=True, size=12)
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+                    cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+                    cell.font = Font(bold=True, size=12, color="FFFFFF")
+                
+                # 写入数据
+                for row_idx, item in enumerate(items, start=2):
+                    values = self.query_tree.item(item, "values")
+                    for col_idx, value in enumerate(values, start=1):
+                        cell = ws.cell(row=row_idx, column=col_idx, value=str(value))
+                        cell.alignment = Alignment(horizontal='left', vertical='center')
+                        
+                        # 根据状态设置颜色
+                        if col_idx == 3:  # 状态列
+                            if value == "已使用":
+                                cell.font = Font(color="DC3545")
+                            elif value == "未使用":
+                                cell.font = Font(color="28A745")
+                
+                # 设置列宽
+                column_widths = [25, 20, 12, 25, 25, 25]
+                for col, width in enumerate(column_widths, start=1):
+                    ws.column_dimensions[chr(64 + col)].width = width
+                
+                # 保存文件
+                wb.save(file_path)
+                
+                count = len(items)
+                self.update_status(f"✓ 成功导出 {count} 条记录到 Excel")
+                messagebox.showinfo("成功", 
+                    f"已成功导出 {count} 条记录！\n\n文件保存至:\n{file_path}", 
+                    parent=self.root)
+                
+            except ImportError:
+                # 如果没有 openpyxl，使用 CSV 作为替代
+                import csv
+                
+                csv_path = file_path.replace('.xlsx', '.csv')
+                
+                with open(csv_path, 'w', newline='', encoding='utf-8-sig') as f:
+                    writer = csv.writer(f)
+                    
+                    # 写入表头
+                    writer.writerow(["激活码", "产品名", "状态", "绑定码", "创建时间", "使用时间"])
+                    
+                    # 写入数据
+                    for item in items:
+                        values = self.query_tree.item(item, "values")
+                        writer.writerow(values)
+                
+                count = len(items)
+                self.update_status(f"✓ 成功导出 {count} 条记录到 CSV")
+                messagebox.showinfo("提示", 
+                    f"已成功导出 {count} 条记录到 CSV 格式！\n\n" +
+                    "（未安装 openpyxl，无法导出 Excel 格式）\n" +
+                    f"文件保存至:\n{csv_path}\n\n" +
+                    "若需要 Excel 格式，请安装: pip install openpyxl", 
+                    parent=self.root)
+                
+        except Exception as e:
+            self.update_status(f"✗ 导出失败: {str(e)}", 0)
+            messagebox.showerror("错误", f"导出失败：{str(e)}", parent=self.root)
 
 
 def main():
