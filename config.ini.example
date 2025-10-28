@@ -1,0 +1,17 @@
+# 配置文件示例
+# 复制此文件为 config.ini 并修改为你的真实配置
+
+[API]
+# 后端服务器地址（必须修改）
+base_url = http://localhost:5000
+
+[APP]
+# 应用默认主题
+# 可选值: cosmo, flatly, litera, minty, lumen, sandstone, yeti, pulse, 
+#        united, morph, journal, darkly, superhero, solar, cyborg, vapor, simplex, cerculean
+default_theme = cosmo
+
+# 窗口默认大小
+window_width = 1000
+window_height = 750
+

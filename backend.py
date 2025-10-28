@@ -159,6 +159,55 @@ def verify_product_key():
 
 
 
+@app.route('/query_by_product_name', methods=['GET'])
+def query_by_product_name():
+    """根据产品名称查询所有激活码"""
+    try:
+        product_name = request.args.get('product_name')
+        
+        if not product_name:
+            return jsonify({
+                'success': False,
+                'message': '缺少必要参数：product_name'
+            }), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            'SELECT * FROM activation_keys WHERE product_name = ? ORDER BY created_at DESC',
+            (product_name,)
+        )
+        
+        results = cursor.fetchall()
+        conn.close()
+        
+        codes = []
+        for row in results:
+            codes.append({
+                'id': row['id'],
+                'product_key': row['product_key'],
+                'product_name': row['product_name'],
+                'created_at': row['created_at'],
+                'is_used': bool(row['is_used']),
+                'used_at': row['used_at'],
+                'response_key': row['response_key']
+            })
+        
+        return jsonify({
+            'success': True,
+            'product_name': product_name,
+            'count': len(codes),
+            'codes': codes
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'服务器错误: {str(e)}'
+        }), 500
+
+
 @app.route('/list_products', methods=['GET'])
 def list_products():
     """列出所有激活码"""
